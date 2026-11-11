@@ -1,7 +1,7 @@
 // Reads every field of data/restaurants.xlsx, checks each row,
 // and writes the result to src/data/restaurants.ts (a typed file, so TypeScript checks every row).
 // Run with: npm run data
-// Stops with an error if any row is missing a field or has a wrong value.
+// Stops with an error if a row is missing a field or has a wrong value.
 
 import ExcelJS from "exceljs";
 import { mkdir, writeFile } from "node:fs/promises";

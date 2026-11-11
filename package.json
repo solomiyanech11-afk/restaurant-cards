@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "data": "node scripts/convert-restaurants.ts"
+    "data": "node scripts/convert-restaurants.ts",
+    "check": "tsc --noEmit && eslint"
   },
   "dependencies": {
     "next": "16.4.6",

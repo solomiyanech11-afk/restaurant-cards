@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Restaurant cards
 
-## Getting Started
+All 40 restaurants from `data/restaurants.xlsx`, shown as cards that match the Figma wireframe. Built with Next.js and TypeScript. This is the typed data layer that the stackable filter panel builds on next.
 
-First, run the development server:
+![All 40 restaurant cards](screenshot.png)
+
+[Full-size screenshot of all 40 cards](screenshot.png)
+
+## Run it
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Where the data comes from
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `data/restaurants.xlsx` is the only source of truth. It is committed as is, and no data is typed by hand.
+- `npm run data` runs `scripts/convert-restaurants.ts`. The script reads every field of every row, checks it, and writes `src/data/restaurants.ts`. It stops with an error if a field is missing or has a wrong value (for example, a `price_tier` outside 1–4).
+- Note: the sheet stores every cell as text (`"28"`, `"4.6"`, `"true"`). The script converts these to real numbers and booleans, so filters compare numbers, not strings.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Types (`src/types`)
 
-## Learn More
+- `Restaurant`: the 9 fields of the sheet, with the same names (`delivery_time_min`, `price_tier`, `is_vegan`, ...).
+- `PriceBand`: only `"$" | "$$" | "$$$" | "$$$$"`, never a plain string. `toPriceBand()` turns `price_tier` 1–4 into a band.
+- `FilterState`: one field per chip group, each with a typed "nothing selected":
+  - `delivery: 15 | 30 | 45 | null`
+  - `price: PriceBand[]` (`[]` = nothing selected)
+  - `dietary: ("vegetarian" | "vegan" | "gluten_free")[]` (`[]` = nothing selected)
+  - `rating: 3.5 | 4.0 | 4.5 | null`
+- `EMPTY_FILTERS`: the state with nothing selected in every group.
 
-To learn more about Next.js, take a look at the following resources:
+## Checks
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run check    # TypeScript strict mode + ESLint
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+TypeScript `strict` is on, and ESLint's `@typescript-eslint/no-explicit-any` is set to `error`, so `any` cannot appear in the code.

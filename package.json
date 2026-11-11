@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "data": "node scripts/convert-restaurants.ts"
   },
   "dependencies": {
     "next": "16.4.6",
@@ -19,6 +20,8 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "exceljs": "^4.4.0",
     "typescript": "^5"
-  }
+  },
+  "type": "module"
 }

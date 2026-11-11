@@ -1,84 +1,15 @@
 // Reads every field of data/restaurants.xlsx, checks each row,
-// and writes the result to src/data/restaurants.ts (a typed file, so TypeScript checks every row).
+// and writes the result to src/data/restaurants.json.
 // Run with: npm run data
 // Stops with an error if a row is missing a field or has a wrong value.
 
 import ExcelJS from "exceljs";
 import { mkdir, writeFile } from "node:fs/promises";
-import type { PriceTier, Restaurant } from "../src/types/restaurant.ts";
+import { parseRestaurant, RESTAURANT_FIELDS } from "../src/lib/parseRestaurants.ts";
+import type { Restaurant } from "../src/types/restaurant.ts";
 
 const INPUT = "data/restaurants.xlsx";
-const OUTPUT = "src/data/restaurants.ts";
-
-const COLUMNS = [
-  "id",
-  "name",
-  "cuisine",
-  "delivery_time_min",
-  "price_tier",
-  "is_vegetarian",
-  "is_vegan",
-  "is_gluten_free",
-  "rating",
-] as const;
-
-type Column = (typeof COLUMNS)[number];
-type RawRow = Record<Column, unknown>;
-
-function fail(row: number, message: string): never {
-  throw new Error(`Row ${row}: ${message}`);
-}
-
-// The sheet stores every cell as text ("28", "4.6"), so numbers arrive as strings.
-// Accept a real number or text that is exactly a number, nothing else.
-function readNumber(value: unknown, row: number, field: Column): number {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && /^-?\d+(\.\d+)?$/.test(value.trim())) {
-    return Number(value.trim());
-  }
-  fail(row, `${field} must be a number, got ${JSON.stringify(value)}`);
-}
-
-function readText(value: unknown, row: number, field: Column): string {
-  if (typeof value !== "string" || value.trim() === "") {
-    fail(row, `${field} must be non-empty text, got ${JSON.stringify(value)}`);
-  }
-  return value.trim();
-}
-
-function readBoolean(value: unknown, row: number, field: Column): boolean {
-  if (typeof value === "boolean") return value;
-  const text = typeof value === "string" ? value.trim().toLowerCase() : value;
-  if (text === "true") return true;
-  if (text === "false") return false;
-  fail(row, `${field} must be true or false, got ${JSON.stringify(value)}`);
-}
-
-function readPriceTier(value: unknown, row: number): PriceTier {
-  const n = readNumber(value, row, "price_tier");
-  if (n === 1 || n === 2 || n === 3 || n === 4) return n;
-  fail(row, `price_tier must be 1, 2, 3 or 4, got ${n}`);
-}
-
-function toRestaurant(raw: RawRow, row: number): Restaurant {
-  const delivery = readNumber(raw.delivery_time_min, row, "delivery_time_min");
-  if (delivery <= 0) fail(row, `delivery_time_min must be above 0, got ${delivery}`);
-
-  const rating = readNumber(raw.rating, row, "rating");
-  if (rating < 0 || rating > 5) fail(row, `rating must be between 0 and 5, got ${rating}`);
-
-  return {
-    id: readNumber(raw.id, row, "id"),
-    name: readText(raw.name, row, "name"),
-    cuisine: readText(raw.cuisine, row, "cuisine"),
-    delivery_time_min: delivery,
-    price_tier: readPriceTier(raw.price_tier, row),
-    is_vegetarian: readBoolean(raw.is_vegetarian, row, "is_vegetarian"),
-    is_vegan: readBoolean(raw.is_vegan, row, "is_vegan"),
-    is_gluten_free: readBoolean(raw.is_gluten_free, row, "is_gluten_free"),
-    rating,
-  };
-}
+const OUTPUT = "src/data/restaurants.json";
 
 async function main(): Promise<void> {
   const workbook = new ExcelJS.Workbook();
@@ -87,38 +18,30 @@ async function main(): Promise<void> {
   if (!sheet) throw new Error(`${INPUT} has no sheets`);
 
   // Header row: find which column holds each field.
-  const header = sheet.getRow(1);
-  const position = new Map<Column, number>();
-  header.eachCell((cell, col) => {
-    const name = String(cell.value).trim();
-    const match = COLUMNS.find((c) => c === name);
-    if (match) position.set(match, col);
+  const position = new Map<string, number>();
+  sheet.getRow(1).eachCell((cell, col) => {
+    position.set(String(cell.value).trim(), col);
   });
-  for (const column of COLUMNS) {
-    if (!position.has(column)) throw new Error(`Missing column "${column}" in ${INPUT}`);
+  for (const field of RESTAURANT_FIELDS) {
+    if (!position.has(field)) throw new Error(`Missing column "${field}" in ${INPUT}`);
   }
 
   const restaurants: Restaurant[] = [];
   for (let r = 2; r <= sheet.rowCount; r++) {
     const row = sheet.getRow(r);
     if (!row.hasValues) continue;
-    const raw = {} as RawRow;
-    for (const column of COLUMNS) {
-      raw[column] = row.getCell(position.get(column) ?? 0).value;
+    const raw: Record<string, unknown> = {};
+    for (const field of RESTAURANT_FIELDS) {
+      raw[field] = row.getCell(position.get(field) ?? 0).value;
     }
-    restaurants.push(toRestaurant(raw, r));
+    restaurants.push(parseRestaurant(raw, `Sheet row ${r}`));
   }
 
   const ids = new Set(restaurants.map((x) => x.id));
   if (ids.size !== restaurants.length) throw new Error("Duplicate id found");
 
   await mkdir("src/data", { recursive: true });
-  const file =
-    "// Generated by scripts/convert-restaurants.ts from data/restaurants.xlsx.\n" +
-    "// Do not edit by hand. Run `npm run data` to regenerate.\n\n" +
-    'import type { Restaurant } from "@/types/restaurant";\n\n' +
-    `export const restaurants: Restaurant[] = ${JSON.stringify(restaurants, null, 2)};\n`;
-  await writeFile(OUTPUT, file);
+  await writeFile(OUTPUT, JSON.stringify(restaurants, null, 2) + "\n");
   console.log(`Wrote ${restaurants.length} restaurants to ${OUTPUT}`);
 }
 

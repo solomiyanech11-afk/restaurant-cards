@@ -1,5 +1,5 @@
 import { RestaurantCard } from "@/components/RestaurantCard";
-import { restaurants } from "@/data/restaurants";
+import { restaurants } from "@/data/loadRestaurants";
 import styles from "./page.module.css";
 
 function countLine(n: number): string {

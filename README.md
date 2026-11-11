@@ -16,8 +16,9 @@ npm run dev      # http://localhost:3000
 ## Where the data comes from
 
 - `data/restaurants.xlsx` is the only source of truth. It is committed as is, and no data is typed by hand.
-- `npm run data` runs `scripts/convert-restaurants.ts`. The script reads every field of every row, checks it, and writes `src/data/restaurants.ts`. It stops with an error if a field is missing or has a wrong value (for example, a `price_tier` outside 1–4).
-- Note: the sheet stores every cell as text (`"28"`, `"4.6"`, `"true"`). The script converts these to real numbers and booleans, so filters compare numbers, not strings.
+- `npm run data` runs `scripts/convert-restaurants.ts`. The script reads every field of every row, checks it, and writes **`src/data/restaurants.json`** (committed). It stops with an error if a field is missing or has a wrong value (for example, a `price_tier` outside 1–4).
+- The page loads `restaurants.json` through `src/data/loadRestaurants.ts`. A JSON import types `price_tier` as a plain `number`, so the data goes through `parseRestaurants()` (`src/lib/parseRestaurants.ts`), which checks every row and returns `Restaurant[]` with `price_tier` narrowed to `1 | 2 | 3 | 4`. No `any`, no type casts. The conversion script uses the same parser, so the rules live in one place.
+- Note: the sheet stores every cell as text (`"28"`, `"4.6"`, `"true"`). The parser converts these to real numbers and booleans, so filters compare numbers, not strings.
 
 ## Types (`src/types`)
 

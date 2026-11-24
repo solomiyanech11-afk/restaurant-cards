@@ -1,6 +1,8 @@
 # Restaurant cards
 
-All 40 restaurants from `data/restaurants.xlsx`, shown as cards that match the Figma wireframe. Built with Next.js and TypeScript. This is the typed data layer that the stackable filter panel builds on next.
+All 40 restaurants from `data/restaurants.xlsx`, shown as cards that match the Figma wireframe. Built with Next.js and TypeScript. Four stackable filter groups (delivery time, price, dietary, rating) narrow the cards on every chip click.
+
+Filter results compared with the expected-results check table: [docs/filter-results.md](docs/filter-results.md).
 
 ![All 40 restaurant cards](screenshot.png)
 
@@ -30,6 +32,12 @@ npm run dev      # http://localhost:3000
   - `dietary: ("vegetarian" | "vegan" | "gluten_free")[]` (`[]` = nothing selected)
   - `rating: 3.5 | 4.0 | 4.5 | null`
 - `EMPTY_FILTERS`: the state with nothing selected in every group.
+
+## Filters
+
+- `src/lib/filterRestaurants.ts`: one pure function, `filterRestaurants(restaurants, filters)`. It returns a new list and changes nothing else. Rules from the wireframe: delivery at most the chip value (exactly 30 passes), price OR, dietary AND, rating at least the chip value (exactly 4.0 passes), AND between groups, and an empty group lets everything through.
+- `src/components/RestaurantFilters.tsx`: a client component that holds `FilterState` in `useState`. Each chip click re-filters right away, with no Apply button or reload. The count is `filtered.length`. With 0 results it shows the empty state with Clear all.
+- `npm run check:filters` checks the function against the four stacks in `expected-results-check-table.md`.
 
 ## Checks
 

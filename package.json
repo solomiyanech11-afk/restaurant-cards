@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "data": "node scripts/convert-restaurants.ts",
-    "check": "tsc --noEmit && eslint"
+    "check": "tsc --noEmit && eslint",
+    "check:filters": "node scripts/check-filters.ts"
   },
   "dependencies": {
     "next": "16.4.6",
